@@ -12,3 +12,5 @@ Die Bohrlinie kann manuell mit neuen zu erreichenden Punkten manipuliert werden,
 
 Durch den Jobwechsel des Kollegen wurde das Projekt auf Eis gelegt.
 Es wurde jedoch getestet und als guten Prototypen beachtet, der noch etwas Benutzerfreundlicher werden muss.
+
+![grafik](https://user-images.githubusercontent.com/57329432/147818453-dc439f96-7f00-4334-8cf2-9b1cc5b538b2.png)
