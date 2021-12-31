@@ -1,11 +1,9 @@
 # coding: utf8
 
+#--------------------- Importing ---------------------
 from PySide2 import QtWidgets
 from PySide2 import QtGui
 from PySide2 import QtCore
-
-# import main
-
 from PySide2.QtCore import (QCoreApplication, QDate, QDateTime, QMetaObject,
     QObject, QPoint, QRect, QSize, QTime, QUrl, Qt)
 from PySide2.QtGui import (QBrush, QColor, QConicalGradient, QCursor, QFont,
@@ -13,7 +11,16 @@ from PySide2.QtGui import (QBrush, QColor, QConicalGradient, QCursor, QFont,
     QPixmap, QRadialGradient)
 from PySide2.QtWidgets import *
 
+import numpy as np
+from scipy.interpolate import CubicSpline
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanva
 
+
+#--------------------- Gui ---------------------
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
@@ -251,23 +258,7 @@ class Ui_MainWindow(object):
 
 
 
-
-###############################################################################
-
-import numpy as np
-
-from scipy.interpolate import CubicSpline
-
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanva
-
-
-
-
-
+#--------------------- Gui Anpassen / Variablen definieren ---------------------
 class MyQtApp(Ui_MainWindow, QtWidgets.QMainWindow):
     def __init__(self):
         super(MyQtApp, self).__init__()
@@ -283,7 +274,6 @@ class MyQtApp(Ui_MainWindow, QtWidgets.QMainWindow):
         self.delRow_PB.clicked.connect(self.delRow)
 
         self.tableWidget.setHorizontalHeaderLabels(["Terrainpunkte\nTiefe", "Terrainpunkte\nLaenge", "Bohrpunkte\nTiefe", "Bohrpunkte\nLaenge"])
-
 
         self.figure = Figure()
         self.canvas = FigureCanvas(self.figure)
@@ -331,16 +321,10 @@ class MyQtApp(Ui_MainWindow, QtWidgets.QMainWindow):
             bp_item_y = self.tableWidget.item(i, 2)
             bp_item_x = self.tableWidget.item(i, 3)
 
-            try:
                 tp_y.append(float(tp_item_y.text()))
                 tp_x.append(float(tp_item_x.text()))
                 bp_y.append(float(bp_item_y.text()))
                 bp_x.append(float(bp_item_x.text()))
-            except:
-                #QtWidgets.QMessageBox.about(self, "Eingabefehler", "Reihen dürfen in den Bohrpunkte Spalten nicht leer sein!")
-                #raise ValueError
-                pass
-
 
         start_grube = [[0,0,tp_y[0]],
                        [-3,-2,-2]]
@@ -360,9 +344,8 @@ class MyQtApp(Ui_MainWindow, QtWidgets.QMainWindow):
         bp_x = np.asarray(bp_x)
 
 
-
-        #################Algorithmus##################
-
+#--------------------- Algorithmus ---------------------
+        # init    
         # reset fehler
         fehler = False
 
@@ -377,13 +360,15 @@ class MyQtApp(Ui_MainWindow, QtWidgets.QMainWindow):
         delta_y_max = l_stange * proz_calc
         delta_x_max = np.sqrt(delta_y_max ** 2 + l_stange ** 2)
 
+        
         # Kubische Interpolation
         try:
             cs = CubicSpline(bp_x, bp_y, bc_type="natural")
         except:
             QtWidgets.QMessageBox.about(self, "Eingabefehler", "Die Bohrpunkte Laengen müssen zwingend von klein nach gross sortiert werden!")
             raise ValueError
-        ###############################################################################
+
+            
         # Stangen berechnen
         x_1 = bp_x[0]
         x_2 = x_1 + delta_x_max / 2
@@ -402,7 +387,6 @@ class MyQtApp(Ui_MainWindow, QtWidgets.QMainWindow):
                 result = np.sqrt((x_2 - x_1) ** 2 + (cs(x_2) - y_1) ** 2) - 3
                 if result > 0:
                     x_2 -= 0.01
-
                 elif result < 0:
                     x_2 += 0.01
 
@@ -412,8 +396,6 @@ class MyQtApp(Ui_MainWindow, QtWidgets.QMainWindow):
 
             # y array erweitern
             y_lin = np.append(y_lin, cs(x_2))
-
-
             y_1 = y_lin[position]
 
             # x_2 zuruecksetzen
@@ -422,7 +404,7 @@ class MyQtApp(Ui_MainWindow, QtWidgets.QMainWindow):
             # position korrigieren
             position += 1
 
-        ###############################################################################
+            
         # Steigung kontrollieren
         delta_y = np.linspace(0, 1, len(x_lin) - 1)
         delta_x = np.linspace(0, 1, len(x_lin) - 1)
@@ -459,9 +441,9 @@ class MyQtApp(Ui_MainWindow, QtWidgets.QMainWindow):
                 item = QtWidgets.QTableWidgetItem()
                 item.setText(str(np.round(delta_proz[i],2)))
                 self.tableWidget_2.setItem(1,i, item)
-        ###############################################################################
-        # Ein und Austrittssteigung
 
+        
+        # Ein und Austrittssteigung
         print("--------------------------------------------------------\n")
         print("Die Einstichssteigung beträgt", round(steigung[0] * 100, 2), "%\n")
         print("Die Austrittssteigung beträgt", round(steigung[(len(steigung) - 1)] * 100, 2), "%\n")
@@ -476,7 +458,7 @@ class MyQtApp(Ui_MainWindow, QtWidgets.QMainWindow):
             item.setText(str(np.round(steigung[i]*100,2)))
             self.tableWidget_2.setItem(0,i, item)
 
-        ###############################################################################
+            
         # Analyse
         l_stange_real = np.linspace(0, 1, len(x_lin) - 1)
         for i in range(len(x_lin) - 1):
@@ -486,9 +468,7 @@ class MyQtApp(Ui_MainWindow, QtWidgets.QMainWindow):
         stangen_mean = np.mean(l_stange_real)
 
 
-
-        #################Ende Algorithmus##################
-
+        # Plot
         figure = Figure()
         axes = figure.gca()
 
